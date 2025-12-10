@@ -204,7 +204,7 @@ class VideoComposer:
                 stroke_width=style.stroke_width if style.stroke_color else 0,
                 method="caption",
                 size=(video.w - 100, None),
-                align="center",
+                text_align="center",
             )
             if txt_clip is None:
                 # Skip caption if TextClip fails even after fallback
@@ -317,14 +317,21 @@ class VideoComposer:
         # Dark background
         bg = ColorClip(size=size, color=(30, 30, 30), duration=duration)
 
-        txt = self._create_text_clip(
+        # Wrap title to avoid cramped lines and mid-word breaks
+        wrapped_title = self._wrap_text(
             title,
+            max_width_px=int(size[0] * 0.8),
+            font_size=60,
+        )
+        txt = self._create_text_clip(
+            wrapped_title,
             font_size=60,
             color="white",
-            font="Arial",
+            font=None,
             method="caption",
-            size=(size[0] - 100, None),
-            align="center",
+            size=(int(size[0] * 0.8), None),
+            text_align="center",
+            interline=6,
         )
         if txt is None:
             # If TextClip fails even after fallback, just return background
@@ -343,15 +350,31 @@ class VideoComposer:
             return None
 
         try:
-            return TextClip(text, font=font, **kwargs)
+            return TextClip(text=text, font=font, **kwargs)
         except Exception:
             if font:
                 try:
                     # Retry with default font to avoid missing font errors.
-                    return TextClip(text, font=None, **kwargs)
+                    return TextClip(text=text, font=None, **kwargs)
                 except Exception:
                     return None
             return None
+
+    def _wrap_text(self, text: str, *, max_width_px: int, font_size: int) -> str:
+        """Word-wrap text to roughly fit within a target pixel width."""
+        import textwrap
+
+        # Approximate characters that fit in the requested width for the given font size.
+        # Empirically ~0.55 * font_size is a reasonable average character width.
+        avg_char_px = max(font_size * 0.55, 1)
+        max_chars = max(20, int(max_width_px / avg_char_px))
+
+        return textwrap.fill(
+            text,
+            width=max_chars,
+            break_long_words=False,
+            break_on_hyphens=False,
+        )
 
     def _extract_video_segment(
         self, video: Any, start_time: float, end_time: float, target_duration: float

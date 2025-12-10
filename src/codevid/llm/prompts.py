@@ -42,6 +42,7 @@ Important:
 - Each segment's text should be 1-3 sentences
 - Use second person ("you") to address the viewer
 - Be specific about UI elements being interacted with
+- Make sure that it sounds like a human wrote it, not a machine. This tutorial will be on youtube and needs to sound natural.
 """
 
 STEP_ENHANCEMENT_PROMPT = """\
@@ -64,7 +65,7 @@ Tutorial topic: {topic}
 Application: {app_name}
 Steps covered: {step_summary}
 
-Write 2-3 sentences that:
+Write 2 sentences that:
 1. Welcome the viewer
 2. Explain what they'll learn
 3. Set expectations for the tutorial duration

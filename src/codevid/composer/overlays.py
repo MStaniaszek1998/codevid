@@ -234,11 +234,11 @@ class OverlayGenerator:
             return None
 
         try:
-            return TextClip(text, **kwargs)
+            return TextClip(text=text, **kwargs)
         except Exception:
             font = kwargs.pop("font", None)
             try:
-                return TextClip(text, font=None, **kwargs)
+                return TextClip(text=text, font=None, **kwargs)
             except Exception:
                 # Still failed; skip overlay gracefully.
                 return None

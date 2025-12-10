@@ -1,5 +1,10 @@
 # Byte-compiled / optimized / DLL files
+.codevid_temp/
 __pycache__/
+*.mp4
+*.mp3
+*.avi
+*.mov
 *.pyc
 __pycache__/
 *.py[codz]
