@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
 
-from codevid.audio.tts import TTSProvider
+from codevid.audio.tts import AudioSegment, TTSProvider
 from codevid.composer.editor import CompositionConfig, CompositionResult, VideoComposer
 from codevid.llm.base import LLMProvider
 from codevid.models import ParsedTest, VideoScript
@@ -101,14 +101,20 @@ class Pipeline:
             audio_segments = await self._generate_audio(script)
             self._report_progress(45, f"Generated {len(audio_segments)} audio segments")
 
-            # Step 4: Run test with recording
+            # Step 3.5: Calculate per-step delays from audio durations
+            step_delays = self._calculate_step_delays(
+                script, audio_segments, num_steps=len(parsed_test.steps)
+            )
+
+            # Step 4: Run test with recording (audio-synchronized timing)
             self._report_progress(50, "Recording test execution...")
-            recording_path, markers = await self._record_test(parsed_test)
+            recording_path, markers = await self._record_test(parsed_test, step_delays)
             self._report_progress(75, "Recording complete")
 
             # Step 5: Compose final video
             self._report_progress(80, "Composing final video...")
-            result = self._compose_video(recording_path, script, audio_segments, markers)
+            audio_paths = [seg.path for seg in audio_segments]
+            result = self._compose_video(recording_path, script, audio_paths, markers)
 
             # Step 6: Cleanup temporary files
             self._report_progress(95, "Cleaning up temporary files...")
@@ -147,38 +153,94 @@ class Pipeline:
         context = {"app_name": self.config.app_name or "the application"}
         return await self._llm.generate_script(test, context)
 
-    async def _generate_audio(self, script: VideoScript) -> list[Path]:
-        """Generate audio for all narration segments."""
+    async def _generate_audio(self, script: VideoScript) -> list[AudioSegment]:
+        """Generate audio for all narration segments.
+
+        Returns:
+            List of AudioSegment objects with paths and durations.
+            Order: [intro, segment_0, segment_1, ..., conclusion]
+        """
         if self._tts is None or self._tts.provider_name == "none":
             raise PipelineError(
                 "No text-to-speech provider is configured; narration audio cannot be generated. "
                 "Set a TTS provider in codevid.yaml or pass --tts/--voice via the CLI."
             )
 
-        audio_paths: list[Path] = []
+        audio_segments: list[AudioSegment] = []
         output_dir = self._get_temp_dir()
         output_dir.mkdir(exist_ok=True)
 
         # Generate intro audio
         intro_path = output_dir / "intro.mp3"
-        await self._tts.synthesize(script.introduction, intro_path)
-        audio_paths.append(intro_path)
+        intro_segment = await self._tts.synthesize(script.introduction, intro_path)
+        audio_segments.append(intro_segment)
 
         # Generate segment audio
         for i, segment in enumerate(script.segments):
             segment_path = output_dir / f"segment_{i:03d}.mp3"
-            await self._tts.synthesize(segment.text, segment_path)
-            audio_paths.append(segment_path)
+            audio_segment = await self._tts.synthesize(segment.text, segment_path)
+            audio_segments.append(audio_segment)
 
         # Generate conclusion audio
         conclusion_path = output_dir / "conclusion.mp3"
-        await self._tts.synthesize(script.conclusion, conclusion_path)
-        audio_paths.append(conclusion_path)
+        conclusion_segment = await self._tts.synthesize(script.conclusion, conclusion_path)
+        audio_segments.append(conclusion_segment)
 
-        return audio_paths
+        return audio_segments
 
-    async def _record_test(self, test: ParsedTest) -> tuple[Path, list[EventMarker]]:
-        """Execute test while recording screen."""
+    def _calculate_step_delays(
+        self,
+        script: VideoScript,
+        audio_segments: list[AudioSegment],
+        num_steps: int,
+        min_delay: float = 0.5,
+    ) -> list[float]:
+        """Calculate per-step delays based on audio segment durations.
+
+        Maps narration audio durations to test steps so each step waits
+        for its narration to complete.
+
+        Args:
+            script: The video script with segment-to-step mapping.
+            audio_segments: Audio segments [intro, segment_0, ..., conclusion].
+            num_steps: Total number of test steps.
+            min_delay: Minimum delay per step regardless of audio.
+
+        Returns:
+            List of delays (in seconds) for each test step.
+        """
+        # Build step_index -> total audio duration mapping
+        # (handles multiple segments per step by summing)
+        step_durations: dict[int, float] = {}
+
+        for i, narration_seg in enumerate(script.segments):
+            # Audio index is i+1 (skip intro at index 0)
+            audio_idx = i + 1
+            if audio_idx < len(audio_segments) - 1:  # Exclude conclusion
+                duration = audio_segments[audio_idx].duration
+                step_idx = narration_seg.step_index
+                step_durations[step_idx] = step_durations.get(step_idx, 0.0) + duration
+
+        # Generate delays for all steps
+        delays: list[float] = []
+        for step_idx in range(num_steps):
+            audio_duration = step_durations.get(step_idx, 0.0)
+            # Step delay should be at least audio duration, but not less than min_delay
+            delays.append(max(audio_duration, min_delay))
+
+        return delays
+
+    async def _record_test(
+        self,
+        test: ParsedTest,
+        step_delays: list[float] | None = None,
+    ) -> tuple[Path, list[EventMarker]]:
+        """Execute test while recording screen.
+
+        Args:
+            test: The parsed test to execute.
+            step_delays: Optional per-step delays (from audio durations).
+        """
         from codevid.executor.playwright import ExecutorConfig, PlaywrightExecutor
 
         output_dir = self._get_temp_dir()
@@ -189,7 +251,8 @@ class Pipeline:
         executor_config = ExecutorConfig(
             headless=True,
             slow_mo=100,
-            step_delay=0.5,
+            step_delay=0.5,  # Fallback delay
+            step_delays=step_delays,  # Per-step delays from audio durations
             record_video_dir=video_dir,
             record_video_size=self.config.project_config.recording.resolution,
         )

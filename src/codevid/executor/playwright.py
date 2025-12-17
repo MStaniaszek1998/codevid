@@ -27,7 +27,8 @@ class ExecutorConfig:
     slow_mo: int = 100  # Milliseconds between Playwright actions
     viewport_width: int = 1280
     viewport_height: int = 720
-    step_delay: float = 0.5  # Delay after each step for visual clarity
+    step_delay: float = 0.5  # Default delay after each step (fallback)
+    step_delays: list[float] | None = None  # Per-step delays (overrides step_delay)
     record_video_dir: Path | None = None
     record_video_size: tuple[int, int] | None = None  # Defaults to viewport size
 
@@ -39,6 +40,15 @@ class PlaywrightExecutor:
         self.config = config or ExecutorConfig()
         self._browser: Browser | None = None
         self._page: Page | None = None
+
+    def _get_step_delay(self, step_index: int) -> float:
+        """Get the delay for a specific step.
+
+        Uses per-step delays if available, otherwise falls back to default.
+        """
+        if self.config.step_delays and step_index < len(self.config.step_delays):
+            return self.config.step_delays[step_index]
+        return self.config.step_delay
 
     async def execute(
         self,
@@ -120,9 +130,10 @@ class PlaywrightExecutor:
                     # Execute the step
                     await self._execute_step(step)
 
-                    # Add delay for visual clarity
-                    if self.config.step_delay > 0:
-                        await asyncio.sleep(self.config.step_delay)
+                    # Add delay for visual clarity (uses per-step delay if available)
+                    delay = self._get_step_delay(i)
+                    if delay > 0:
+                        await asyncio.sleep(delay)
 
                     # Mark step end (always, for video composition timing)
                     step_end_time = time.time() - start_time
