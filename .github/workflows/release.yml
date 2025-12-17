@@ -40,7 +40,7 @@ jobs:
       - name: Python Semantic Release
         id: release
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # Run semantic-release to bump version and update changelog
           uv run semantic-release version
@@ -76,6 +76,6 @@ jobs:
       - name: Create GitHub Release
         if: steps.release.outputs.released == 'true'
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           uv run semantic-release publish
