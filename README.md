@@ -6,6 +6,16 @@
 
 Codevid is a CLI tool that uses AI to convert your existing Python Playwright tests into narrated, captioned video tutorials. It analyzes your test code, generates a natural language script, records the execution, and automatically edits everything into a polished video.
 
+## 🎬 How It Works
+
+<video src="assets/demo.webm" controls width="100%"></video>
+
+### Generated Tutorial
+
+Here's the result - a fully narrated video tutorial generated from the test above:
+
+<video src="assets/tutorial.mp4" controls width="100%"></video>
+
 ## 🚀 Features
 
 *   **Automated Scriptwriting**: Uses LLMs (OpenAI/Anthropic) to explain *why* an action is happening, not just *what* is happening.
