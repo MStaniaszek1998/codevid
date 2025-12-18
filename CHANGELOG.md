@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.1.0 (2025-12-18)
+
+### Features
+
+- Add demo video and tutorial examples to README and examples directory
+  ([`68ce6f3`](https://github.com/MStaniaszek1998/codevid/commit/68ce6f32d7b1ce24e364106953586e22dcd373ac))
+
+
 ## v1.0.6 (2025-12-17)
 
 
