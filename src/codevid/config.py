@@ -108,6 +108,7 @@ def parse_recording_settings(data: dict[str, Any]) -> RecordingSettings:
     return RecordingSettings(
         fps=data.get("fps", 30),
         resolution=resolution,
+        device_scale_factor=data.get("device_scale_factor"),
         highlight_clicks=data.get("highlight_clicks", True),
         mouse_spotlight=data.get("mouse_spotlight", True),
         capture_audio=data.get("capture_audio", False),
@@ -125,6 +126,13 @@ def parse_video_settings(data: dict[str, Any], base_path: Path) -> VideoSettings
             path = base_path / path
         return path
 
+    encoding_raw = data.get("encoding", {})
+    encoding: dict[str, Any]
+    if isinstance(encoding_raw, dict):
+        encoding = encoding_raw
+    else:
+        encoding = {}
+
     return VideoSettings(
         theme=data.get("theme", "default"),
         include_captions=data.get("include_captions", True),
@@ -132,6 +140,11 @@ def parse_video_settings(data: dict[str, Any], base_path: Path) -> VideoSettings
         outro_template=resolve_path(data.get("outro_template")),
         watermark_path=resolve_path(data.get("watermark", {}).get("image")),
         watermark_position=data.get("watermark", {}).get("position", "bottom-right"),
+        crf=encoding.get("crf", data.get("crf", 18)),
+        preset=encoding.get("preset", data.get("preset", "medium")),
+        bitrate=encoding.get("bitrate", data.get("bitrate")),
+        pixel_format=encoding.get("pixel_format", data.get("pixel_format", "yuv420p")),
+        faststart=encoding.get("faststart", data.get("faststart", True)),
     )
 
 

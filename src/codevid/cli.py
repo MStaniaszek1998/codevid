@@ -394,13 +394,20 @@ tts:
 
 recording:
   fps: 30
-  # resolution: [1920, 1080]  # Optional: auto-detect if not set
+  # resolution: [1920, 1080]  # Recommended for sharper recordings
+  # device_scale_factor: 2  # Optional: higher DPI (may affect responsive layouts)
   highlight_clicks: true
   mouse_spotlight: true
 
 video:
   theme: default
   include_captions: true
+  # encoding:
+  #   crf: 18            # Lower = higher quality (typical: 18-23)
+  #   preset: medium     # Slower = better compression (medium/slow/slower)
+  #   pixel_format: yuv420p
+  #   faststart: true    # Enables fast streaming playback for MP4
+  #   # bitrate: 8000k   # Optional: set if you want constant-ish bitrate output
   # intro_template: ./assets/intro.mp4
   # outro_template: ./assets/outro.mp4
   # watermark:

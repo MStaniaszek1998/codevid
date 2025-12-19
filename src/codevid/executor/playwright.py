@@ -21,11 +21,12 @@ if TYPE_CHECKING:
 class ExecutorConfig:
     """Configuration for test execution."""
 
-    headless: bool = False  # Must be False for screen recording
+    headless: bool = False  # Screen recording requires headed; Playwright video works headless.
     browser_type: str = "chromium"
     slow_mo: int = 100  # Milliseconds between Playwright actions
     viewport_width: int = 1280
     viewport_height: int = 720
+    device_scale_factor: float | None = None
     step_delay: float = 0.5  # Default delay after each step (fallback)
     step_delays: list[float] | None = None  # Per-step delays (overrides step_delay)
     record_video_dir: Path | None = None
@@ -82,6 +83,8 @@ class PlaywrightExecutor:
                     "height": self.config.viewport_height,
                 }
             }
+            if self.config.device_scale_factor is not None:
+                context_kwargs["device_scale_factor"] = self.config.device_scale_factor
 
             if self.config.record_video_dir:
                 context_kwargs["record_video_dir"] = str(self.config.record_video_dir)

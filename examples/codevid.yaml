@@ -1,0 +1,42 @@
+# Codevid Configuration
+# See https://github.com/codevid/codevid for documentation
+
+project:
+  name: "My App Tutorials"
+  output_dir: "./tutorials"
+
+llm:
+  provider: openai
+  # model: claude-sonnet-4-20250514  # Optional: specify model
+
+tts:
+  provider: openai
+  voice: alloy
+  speed: 1.0
+
+recording:
+  fps: 30
+  resolution: [1920, 1080]  # Recommended for sharper recordings
+  # device_scale_factor: 2  # Optional: higher DPI (may affect responsive layouts)
+  highlight_clicks: true
+  mouse_spotlight: true
+
+video:
+  theme: default
+  include_captions: true
+  encoding:
+    crf: 18
+    preset: medium
+    pixel_format: yuv420p
+    faststart: true
+  # intro_template: ./assets/intro.mp4
+  # outro_template: ./assets/outro.mp4
+  # watermark:
+  #   enabled: true
+  #   image: ./assets/logo.png
+  #   position: bottom-right
+
+tests:
+  framework: playwright
+  # base_url: http://localhost:3000
+  browser: chromium

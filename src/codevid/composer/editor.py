@@ -26,6 +26,11 @@ class CompositionConfig:
     fps: int = 30
     codec: str = "libx264"
     audio_codec: str = "aac"
+    crf: int = 18
+    preset: str = "medium"
+    bitrate: str | None = None
+    pixel_format: str = "yuv420p"
+    faststart: bool = True
 
 
 @dataclass
@@ -164,11 +169,21 @@ class VideoComposer:
             final_video = self._add_watermark(final_video)
 
         # Export final video
+        ffmpeg_params: list[str] = []
+        if self.config.codec in {"libx264", "libx265"}:
+            ffmpeg_params.extend(["-preset", self.config.preset, "-crf", str(self.config.crf)])
+        if self.config.pixel_format:
+            ffmpeg_params.extend(["-pix_fmt", self.config.pixel_format])
+        if self.config.faststart and self.config.output_path.suffix.lower() in {".mp4", ".m4v"}:
+            ffmpeg_params.extend(["-movflags", "+faststart"])
+
         final_video.write_videofile(
             str(self.config.output_path),
             fps=self.config.fps,
             codec=self.config.codec,
             audio_codec=self.config.audio_codec,
+            bitrate=self.config.bitrate,
+            ffmpeg_params=ffmpeg_params,
             logger=None,
         )
 

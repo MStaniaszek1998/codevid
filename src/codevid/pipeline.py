@@ -248,13 +248,22 @@ class Pipeline:
         video_dir = output_dir / "playwright_video"
         video_dir.mkdir(exist_ok=True)
 
+        configured_resolution = self.config.project_config.recording.resolution
+        if configured_resolution is not None:
+            w, h = configured_resolution
+            if w <= 0 or h <= 0:
+                raise PipelineError(f"Invalid recording resolution: {configured_resolution}")
+
         executor_config = ExecutorConfig(
             headless=True,
             slow_mo=100,
+            viewport_width=(configured_resolution[0] if configured_resolution else 1280),
+            viewport_height=(configured_resolution[1] if configured_resolution else 720),
+            device_scale_factor=self.config.project_config.recording.device_scale_factor,
             step_delay=0.5,  # Fallback delay
             step_delays=step_delays,  # Per-step delays from audio durations
             record_video_dir=video_dir,
-            record_video_size=self.config.project_config.recording.resolution,
+            record_video_size=configured_resolution,
         )
         executor = PlaywrightExecutor(executor_config)
 
@@ -289,6 +298,12 @@ class Pipeline:
             outro_path=self.config.project_config.video.outro_template,
             watermark_path=self.config.project_config.video.watermark_path,
             watermark_position=self.config.project_config.video.watermark_position,
+            fps=self.config.project_config.recording.fps,
+            crf=self.config.project_config.video.crf,
+            preset=self.config.project_config.video.preset,
+            bitrate=self.config.project_config.video.bitrate,
+            pixel_format=self.config.project_config.video.pixel_format,
+            faststart=self.config.project_config.video.faststart,
         )
 
         composer = VideoComposer(comp_config)

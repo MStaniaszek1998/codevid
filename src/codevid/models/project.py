@@ -56,6 +56,7 @@ class RecordingSettings:
 
     fps: int = 30
     resolution: tuple[int, int] | None = None  # None = auto-detect
+    device_scale_factor: float | None = None
     highlight_clicks: bool = True
     mouse_spotlight: bool = True
     capture_audio: bool = False
@@ -71,6 +72,11 @@ class VideoSettings:
     outro_template: Path | None = None
     watermark_path: Path | None = None
     watermark_position: str = "bottom-right"
+    crf: int = 18
+    preset: str = "medium"
+    bitrate: str | None = None
+    pixel_format: str = "yuv420p"
+    faststart: bool = True
 
 
 @dataclass
