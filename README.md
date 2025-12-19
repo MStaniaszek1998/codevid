@@ -101,6 +101,7 @@ codevid list-voices openai
 
 ## ⚠️ Current Limitations
 
+*   **Audio-video sync**: A major limitation right now is the video and audio sync - But I am working on improving it :) 
 *   **Framework Support**: Currently, Codevid **only supports Python Playwright** tests.
 *   **Structure**: Tests must be written as standard functions or Pytest functions (e.g., `def test_example(page):`).
 
