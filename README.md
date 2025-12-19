@@ -14,7 +14,11 @@ Codevid is a CLI tool that uses AI to convert your existing Python Playwright te
 
 Here's the result - a fully narrated video tutorial generated from the test above:
 
-https://github.com/user-attachments/assets/20b4e331-231e-40cf-962b-760089987283
+
+
+https://github.com/user-attachments/assets/4f67a0cd-6702-41a5-80ea-c289e092b12a
+
+
 
 
 ## 🚀 Features
