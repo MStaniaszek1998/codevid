@@ -2,6 +2,19 @@
 
 <!-- version list -->
 
+## v1.2.0 (2025-12-19)
+
+### Documentation
+
+- Replace old tutorial link with new one
+  ([`33f5287`](https://github.com/MStaniaszek1998/codevid/commit/33f5287d09997bfd4485988317f27cd4a2281cce))
+
+### Features
+
+- Enhance video recording and configuration options in README and YAML
+  ([`ba4f662`](https://github.com/MStaniaszek1998/codevid/commit/ba4f6625c265dfd908d2fefcd852f87bec1b5627))
+
+
 ## v1.1.1 (2025-12-18)
 
 
