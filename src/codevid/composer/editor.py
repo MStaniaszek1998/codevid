@@ -1,14 +1,64 @@
 """Video composition and editing."""
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 from codevid.composer.captions import Caption, CaptionGenerator
 from codevid.composer.overlays import OverlayConfig, OverlayGenerator
-from codevid.composer.templates import CaptionStyle, VideoTheme, get_theme
+from codevid.composer.templates import get_theme
 from codevid.models import VideoScript
 from codevid.recorder.screen import EventMarker
+
+
+def _build_step_ranges(
+    markers: list[EventMarker],
+    *,
+    video_duration: float,
+) -> list[tuple[int, float, float]]:
+    """Build ordered (step_index, start, end) ranges from step markers.
+
+    Robust to missing step_end markers (closes at video end) and ignores malformed indices.
+    """
+    open_starts: dict[int, float] = {}
+    ranges: list[tuple[int, float, float]] = []
+
+    for marker in markers:
+        idx = marker.metadata.get("index")
+        if not isinstance(idx, int):
+            continue
+
+        if marker.event_type == "step_start":
+            open_starts.setdefault(idx, float(marker.timestamp))
+            continue
+
+        if marker.event_type == "step_end":
+            start = open_starts.pop(idx, None)
+            if start is None:
+                continue
+            end = float(marker.timestamp)
+            if end >= start:
+                ranges.append((idx, start, end))
+
+    # Close any still-open steps at the end of the recording.
+    for idx, start in open_starts.items():
+        ranges.append((idx, start, video_duration))
+
+    # Use timestamps rather than indices to preserve execution order.
+    ranges.sort(key=lambda r: r[1])
+    return ranges
+
+
+def _build_audio_indices_by_step(script: VideoScript) -> dict[int, list[int]]:
+    """Map step_index -> audio_segments indices for that step.
+
+    audio_segments is expected to be laid out as: [intro, seg_0, seg_1, ..., conclusion].
+    """
+    by_step: dict[int, list[int]] = {}
+    for segment_index, segment in enumerate(script.segments):
+        audio_index = segment_index + 1  # offset by intro
+        by_step.setdefault(segment.step_index, []).append(audio_index)
+    return by_step
 
 
 @dataclass
@@ -81,71 +131,100 @@ class VideoComposer:
         """
         from moviepy import AudioFileClip, VideoFileClip, concatenate_videoclips
 
+        try:
+            from moviepy import concatenate_audioclips
+        except ImportError:  # pragma: no cover
+            from moviepy.audio.AudioClip import concatenate_audioclips
+
         # Load base recording
         video = VideoFileClip(str(recording_path))
         video_size = (video.w, video.h)
         final_clips = []
-        audio_durations = []
+        opened_audio_clips: list[Any] = []
 
-        # Build step timing from markers
-        step_times: list[tuple[float, float]] = []
-        for marker in markers:
-            if marker.event_type == "step_start":
-                idx = marker.metadata.get("index")
-                start = marker.timestamp
-                # Find matching step_end
-                end = next(
-                    (
-                        m.timestamp
-                        for m in markers
-                        if m.event_type == "step_end" and m.metadata.get("index") == idx
-                    ),
-                    video.duration,
-                )
-                step_times.append((start, end))
+        step_ranges = _build_step_ranges(markers, video_duration=float(video.duration))
 
-        audio_idx = 0
+        # audio_durations is used by CaptionGenerator and expects:
+        # [intro_duration, seg_0_duration, ..., seg_n_duration, conclusion_duration]
+        audio_durations: list[float] = []
+        intro_duration = 5.0 if script.introduction else 0.0
+        conclusion_duration = 4.0 if script.conclusion else 0.0
 
         # 1. Intro segment (title card + intro audio)
-        if audio_segments and len(audio_segments) > audio_idx:
-            intro_path = audio_segments[audio_idx]
-            if intro_path.exists():
-                intro_audio = AudioFileClip(str(intro_path))
-                audio_durations.append(intro_audio.duration)
-                intro_video = self._create_title_card(
-                    script.title, duration=intro_audio.duration, size=video_size
-                )
+        intro_path = audio_segments[0] if audio_segments else None
+        intro_audio = None
+        if intro_path and intro_path.exists():
+            intro_audio = AudioFileClip(str(intro_path))
+            opened_audio_clips.append(intro_audio)
+            intro_duration = float(intro_audio.duration)
+
+        if script.introduction and intro_duration > 0:
+            intro_video = self._create_title_card(script.title, duration=intro_duration, size=video_size)
+            if intro_audio is not None:
                 intro_video = intro_video.with_audio(intro_audio)
-                final_clips.append(intro_video)
-                audio_idx += 1
+            final_clips.append(intro_video)
+
+        audio_durations.append(intro_duration)
+
+        # Load narration audio per script segment, then group by step_index.
+        segment_audio_clips: list[AudioFileClip | None] = []
+        step_audio_clips: dict[int, list[AudioFileClip]] = {}
+
+        max_segment_audio_index = max(0, len(audio_segments) - 2)  # exclude intro & conclusion
+        for segment_index, segment in enumerate(script.segments):
+            audio_index = segment_index + 1  # offset by intro
+
+            if audio_index <= max_segment_audio_index:
+                path = audio_segments[audio_index]
+                if path.exists():
+                    clip = AudioFileClip(str(path))
+                    opened_audio_clips.append(clip)
+                    segment_audio_clips.append(clip)
+                    step_audio_clips.setdefault(segment.step_index, []).append(clip)
+                    audio_durations.append(float(clip.duration))
+                    continue
+
+            segment_audio_clips.append(None)
+            audio_durations.append(float(segment.timing_hint))
 
         # 2. Step segments (video segment + step audio)
-        for start, end in step_times:
-            if audio_idx < len(audio_segments):
-                step_path = audio_segments[audio_idx]
-                if step_path.exists():
-                    step_audio = AudioFileClip(str(step_path))
-                    audio_durations.append(step_audio.duration)
-                    step_video = self._extract_video_segment(
-                        video, start, end, step_audio.duration
-                    )
-                    step_video = step_video.with_audio(step_audio)
-                    final_clips.append(step_video)
-                    audio_idx += 1
+        for step_index, start, end in step_ranges:
+            step_audio = None
+            target_duration = max(0.1, float(end - start))
+
+            clips_for_step = step_audio_clips.get(step_index, [])
+            if clips_for_step:
+                step_audio = (
+                    clips_for_step[0]
+                    if len(clips_for_step) == 1
+                    else concatenate_audioclips(clips_for_step)
+                )
+                if len(clips_for_step) > 1:
+                    opened_audio_clips.append(step_audio)
+                target_duration = max(0.1, float(step_audio.duration))
+
+            step_video = self._extract_video_segment(video, start, end, target_duration)
+            if step_audio is not None:
+                step_video = step_video.with_audio(step_audio)
+            final_clips.append(step_video)
 
         # 3. Conclusion segment (last frame + conclusion audio)
-        if audio_idx < len(audio_segments):
-            conclusion_path = audio_segments[audio_idx]
-            if conclusion_path.exists():
-                conclusion_audio = AudioFileClip(str(conclusion_path))
-                audio_durations.append(conclusion_audio.duration)
-                # Freeze the last frame
-                last_frame_time = max(0, video.duration - 0.01)
-                conclusion_video = video.to_ImageClip(t=last_frame_time).with_duration(
-                    conclusion_audio.duration
-                )
+        conclusion_path = audio_segments[-1] if len(audio_segments) >= 2 else None
+        conclusion_audio = None
+        if conclusion_path and conclusion_path.exists():
+            conclusion_audio = AudioFileClip(str(conclusion_path))
+            opened_audio_clips.append(conclusion_audio)
+            conclusion_duration = float(conclusion_audio.duration)
+
+        if script.conclusion and conclusion_duration > 0:
+            # Freeze the last frame
+            last_frame_time = max(0, video.duration - 0.01)
+            conclusion_video = video.to_ImageClip(t=last_frame_time).with_duration(conclusion_duration)
+            if conclusion_audio is not None:
                 conclusion_video = conclusion_video.with_audio(conclusion_audio)
-                final_clips.append(conclusion_video)
+            final_clips.append(conclusion_video)
+
+        audio_durations.append(conclusion_duration)
 
         # 4. Concatenate all segments
         if final_clips:
@@ -188,12 +267,18 @@ class VideoComposer:
         )
 
         # Clean up
+        final_duration = float(final_video.duration)
         final_video.close()
         video.close()
+        for clip in opened_audio_clips:
+            try:
+                clip.close()
+            except Exception:
+                pass
 
         return CompositionResult(
             output_path=self.config.output_path,
-            duration=final_video.duration,
+            duration=final_duration,
             resolution=video_size,
             captions_path=captions_path,
         )

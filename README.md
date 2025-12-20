@@ -27,6 +27,7 @@ https://github.com/user-attachments/assets/4f67a0cd-6702-41a5-80ea-c289e092b12a
 *   **Real Execution**: Records your actual app in a browser to ensure the video matches reality.
 *   **AI Voiceovers**: Integrated Text-to-Speech (OpenAI/Edge TTS) for professional narration.
 *   **Smart Editing**: Automatically synchronizes video speed with audio narration and adds captions.
+*   **Stable Sync**: Keeps narration aligned even when multiple narration segments map to one test step.
 
 ## 📋 Prerequisites
 
@@ -101,7 +102,6 @@ codevid list-voices openai
 
 ## ⚠️ Current Limitations
 
-*   **Audio-video sync**: A major limitation right now is the video and audio sync - But I am working on improving it :) 
 *   **Framework Support**: Currently, Codevid **only supports Python Playwright** tests.
 *   **Structure**: Tests must be written as standard functions or Pytest functions (e.g., `def test_example(page):`).
 

@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from codevid.composer.captions import Caption, CaptionGenerator
+from codevid.composer.editor import _build_audio_indices_by_step, _build_step_ranges
 from codevid.composer.overlays import OverlayConfig, OverlayGenerator
 from codevid.composer.templates import get_theme, list_themes
 from codevid.models import NarrationSegment, VideoScript
@@ -211,3 +212,29 @@ class TestOverlayConfig:
         assert config.click_highlight_color == (0, 255, 0)
         assert config.click_highlight_radius == 50
         assert config.step_indicator_enabled is False
+
+
+class TestAudioVideoSyncPlanning:
+    def test_build_audio_indices_by_step_groups_segments(self):
+        script = VideoScript(
+            title="Test Tutorial",
+            introduction="Intro",
+            segments=[
+                NarrationSegment(text="A", step_index=0, timing_hint=1.0),
+                NarrationSegment(text="B", step_index=0, timing_hint=1.0),
+                NarrationSegment(text="C", step_index=2, timing_hint=1.0),
+            ],
+            conclusion="End",
+        )
+
+        assert _build_audio_indices_by_step(script) == {0: [1, 2], 2: [3]}
+
+    def test_build_step_ranges_closes_open_steps_at_video_end(self):
+        markers = [
+            EventMarker(timestamp=0.0, event_type="step_start", metadata={"index": 0}),
+            EventMarker(timestamp=2.0, event_type="step_end", metadata={"index": 0}),
+            EventMarker(timestamp=2.5, event_type="step_start", metadata={"index": 1}),
+            EventMarker(timestamp=3.0, event_type="step_start", metadata={"index": "bad"}),
+        ]
+
+        assert _build_step_ranges(markers, video_duration=10.0) == [(0, 0.0, 2.0), (1, 2.5, 10.0)]
