@@ -29,13 +29,13 @@ def test_open_mercato_complete_quote_creation_flow(page: Page) -> None:
     
     page.wait_for_timeout(700)
     # ============================================================================
-    # PART 2: NAVIGATE TO QUOTES/SALES DOCUMENTS
+    # PART 2: NAVIGATE TO Quote
     # ============================================================================
     quotes_xpath = "/html/body/div[2]/div[1]/div/aside/div/div[2]/nav/div[3]/div[1]/a[3]"
     page.locator(f"xpath={quotes_xpath}").click()
    
-    create_quote_xpath = "/html/body/div[2]/div[1]/div/div/main/div/div/div/div[1]/div[1]/div[2]/a"
-    page.locator(f"xpath={create_quote_xpath}").click()
+    click_create_sales_document_xpath = "/html/body/div[2]/div[1]/div/div/main/div/div/div/div[1]/div[1]/div[2]/a"
+    page.locator(f"xpath={click_create_sales_document_xpath}").click()
 
     # ============================================================================
     # PART 3: GENERATE ID FOR NEW QUOTE
@@ -68,49 +68,48 @@ def test_open_mercato_complete_quote_creation_flow(page: Page) -> None:
     page.locator(f"xpath={select_sales_channel_xpath}").click()
     page.wait_for_timeout(1000)
     #Create Quote Final Button
-    create_quote_xpath = "/html/body/div[2]/div[1]/div/div/main/div/div/div/div[2]/form/div[2]/div[2]/button"
-    page.locator(f"xpath={create_quote_xpath}").click()
+    click_create_button_at_the_top = "/html/body/div[2]/div[1]/div/div/main/div/div/div/div[2]/form/div[2]/div[2]/button"
+    page.locator(f"xpath={click_create_button_at_the_top}").click()
     page.wait_for_timeout(700)
     # ============================================================================
-    items_xpath = "/html/body/div[2]/div[1]/div/div/main/div/div/div[4]/div[1]/div/button[3]"
-    page.locator(f"xpath={items_xpath}").click()
-    add_item_btn_xpath = "/html/body/div[2]/div[1]/div/div/main/div/div/div[4]/div[2]/div/button"
-    page.locator(f"xpath={add_item_btn_xpath}").click()
+    click_items_tab = "/html/body/div[2]/div[1]/div/div/main/div/div/div[4]/div[1]/div/button[3]"
+    page.locator(f"xpath={click_items_tab}").click()
+    click_add_item_button = "/html/body/div[2]/div[1]/div/div/main/div/div/div[4]/div[2]/div/button"
+    page.locator(f"xpath={click_add_item_button}").click() # <hint>Say click add item button</hint>
     # Click "Add item" button
     page.wait_for_timeout(700)
 
     
     # Wait for the modal to appear
-    page.wait_for_selector("text=Add line", timeout=5000)
+    # page.wait_for_selector("text=Add line", timeout=5000)
     
     # Fill in the product search field
     page.locator('input[placeholder="Search product"]').fill("Atlas")
     
     # Wait for search results and click the first result
     page.wait_for_timeout(500)  # Small delay for search results
-    select_product = "/html/body/div[15]/div[2]/div/form/div[1]/div[1]/div/div/div/div[2]/div/div[2]/div/div"
 
     page.get_by_text("Atlas Runner Sneaker").locator("..").click()      # parent
 
     variant_xpath = "/html/body/div[6]/div[2]/div/form/div[1]/div[1]/div/div/div/div[3]/div/div[2]/div/div[1]"
     page.locator(f"xpath={variant_xpath}").click() 
     
-    # # Set quantity (optional, defaults to 1)
+    # # Set price to 138
     price_xpath = "/html/body/div[6]/div[2]/div/form/div[1]/div[1]/div/div/div/div[5]/div/input"
     page.locator(f"xpath={price_xpath}").fill("138")
-
-    # # Select "Pending" status
-    page.locator('input[placeholder="Select status"]').fill("pending")
     page.wait_for_timeout(500)
+    # # Select "Pending" status
+    page.locator('input[placeholder="Select status"]').fill("pending") 
+    
     
     # Click "Pending" option
-    
     page.get_by_text("Pending").locator("..").click()      
     # Click the "Add item" button to confirm
-       
     page.locator("//button[contains(text(), 'Add item')]").click()
+    # close_window_xpath = "/html/body/div[14]/button"
+    # page.locator(f"xpath={close_window_xpath}").click()
     final_price = "/html/body/div[2]/div[1]/div/div/main/div[2]/div/div[5]/div/table/tfoot/tr[1]/td[2]/span"
-    page.wait_for_timeout(500)
+
     expect(page.locator(f"xpath={final_price}")).to_contain_text("$112.20")
 
 

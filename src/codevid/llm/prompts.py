@@ -1,8 +1,7 @@
 """Prompt templates for LLM interactions."""
 
 SCRIPT_GENERATION_PROMPT = """\
-You are creating a video tutorial script based on an automated test.
-The tutorial should be educational, clear, and engaging.
+Create a concise video tutorial script from an automated test.
 
 ## Test Information
 Name: {test_name}
@@ -12,54 +11,62 @@ Purpose: {test_purpose}
 ## Test Steps
 {formatted_steps}
 
-## Instructions
-Generate a video script with:
-1. A brief introduction that states the purpose and title of the tutorial.
-2. A short “How to do it” segment that previews the plan before individual steps.
-3. Narration for each step (explain WHAT is happening and WHY).
-4. A conclusion that describes the expected outcome/result after the steps.
-5. The tutorial name should be short and concise.
-For each step narration:
-- Use natural, conversational language
-- Explain the user intent, not just the action
-- Include timing hints for pacing (how long this step takes to show)
-- Highlight important UI elements
-
-Output as JSON with this exact structure:
+## Output Format
+Generate JSON with this structure:
 {{
-  "title": "Tutorial title here",
-  "introduction": "Welcome message, purpose, and what viewers will learn...",
+  "title": "Short tutorial title (3-6 words)",
+  "introduction": "One sentence stating what viewers will accomplish.",
   "segments": [
-    {{"step_index": -1, "text": "How to do it: quick overview of the plan...", "timing_hint": 3.0}},
-    {{"step_index": 0, "text": "Narration for first step...", "timing_hint": 3.5}},
-    {{"step_index": 1, "text": "Narration for second step...", "timing_hint": 2.0}}
+    {{"step_index": 0, "text": "Direct narration for step...", "timing_hint": 2.5}},
+    {{"step_index": 1, "text": "Direct narration for step...", "timing_hint": 2.0}}
   ],
-  "conclusion": "Outcome-focused summary of what was demonstrated..."
+  "conclusion": "One sentence confirming the result."
 }}
 
-Important:
-- timing_hint is in seconds and should account for the action duration
-- Each segment's text should be 1-3 sentences
-- Use second person ("you") to address the viewer
-- Be specific about UI elements being interacted with
-- Please be concise and avoid unnecessary filler words
-- Make sure that it sounds like a human wrote it, not a machine. This tutorial will be on youtube and needs to sound natural.
+## Narration Rules
+
+REQUIRED STYLE:
+- Use imperative mood: "Click the Submit button" not "Now we click Submit"
+- Be action-specific: use exact values from steps (e.g., "Enter admin@acme.com" not "Enter your email")
+- One sentence per step unless combining related actions
+- Address viewer as "you" only when necessary
+
+PATTERNS TO AVOID (never use these):
+- Weak openings: "So," "Now," "Okay," "Alright," "Next," "First,"
+- Filler phrases: "go ahead and," "we're going to," "let's," "we'll"
+- Redundant commentary: "As you can see," "Notice how," "You'll notice"
+- Meta-narration: "In this step," "What we're doing here is," "The next thing is"
+- Wait/load narration: Never mention waiting, loading, or forms appearing
+
+SKIP ENTIRELY:
+- Do not create segments for wait_for_timeout, wait_for_selector, or similar wait actions
+- Do not narrate page loads or element appearance
+
+## Timing
+- timing_hint: seconds for TTS audio (typically 1.5-3.0 seconds per sentence)
+- Match timing to action complexity, not narration length
 """
 
 STEP_ENHANCEMENT_PROMPT = """\
-Convert this test action into natural tutorial narration.
+Convert this test action into brief tutorial narration.
 
 Action: {action}
 Target: {target}
 Value: {value}
 Context: {context}
 
-Write 1-2 sentences explaining this step as if teaching someone.
-Focus on the user's goal, not the technical implementation.
-Do not use technical jargon like "selector" or "element".
-Please make sure that it only contains the narration text without any additional commentary.
-Make sure that it sounds like a human wrote it, not a machine. This tutorial will be on youtube and needs to sound natural.
-It cannot be long - it should be short and to the point.
+RULES:
+- Write ONE sentence maximum
+- Use imperative mood: "Click Submit" not "Now we click Submit"
+- Include exact values: "Enter 138 in the price field" not "Enter a value"
+- Skip wait/load actions entirely (return empty string)
+
+NEVER USE:
+- "So," "Now," "Okay," "Next," "First," "Let's," "We'll"
+- "go ahead and," "we're going to," "you'll want to"
+- "As you can see," "Notice how," "Wait for"
+
+Return ONLY the narration text, nothing else.
 """
 
 INTRO_GENERATION_PROMPT = """\
