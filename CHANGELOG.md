@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.2.3 (2025-12-29)
+
+### Bug Fixes
+
+- Improve the prompts for generating the script. Right now the tutorial is faster and more concise.
+  ([`4eedba4`](https://github.com/MStaniaszek1998/codevid/commit/4eedba47704e149d2afab1fa98812607eb22b4f8))
+
+
 ## v1.2.2 (2025-12-21)
 
 ### Bug Fixes
