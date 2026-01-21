@@ -32,10 +32,10 @@ class TestEdgeTTSProvider:
 
     @pytest.mark.asyncio
     async def test_synthesize(self, tmp_path: Path):
-        with patch("codevid.audio.edge_tts.edge_tts") as mock_edge_tts:
+        with patch("edge_tts.Communicate") as mock_communicate_class:
             mock_communicate = MagicMock()
             mock_communicate.save = AsyncMock()
-            mock_edge_tts.Communicate.return_value = mock_communicate
+            mock_communicate_class.return_value = mock_communicate
 
             provider = EdgeTTSProvider()
             output_path = tmp_path / "test.mp3"
@@ -48,22 +48,26 @@ class TestEdgeTTSProvider:
 
             assert result.text == "Hello world"
             assert result.duration == 2.5
-            mock_edge_tts.Communicate.assert_called_once()
+            mock_communicate_class.assert_called_once()
             mock_communicate.save.assert_called_once_with(str(output_path))
 
     @pytest.mark.asyncio
     async def test_list_voices(self):
-        with patch("codevid.audio.edge_tts.edge_tts") as mock_edge_tts:
-            mock_edge_tts.list_voices = AsyncMock(return_value=[
+        with patch(
+            "edge_tts.list_voices",
+            new_callable=AsyncMock,
+            return_value=[
                 {"ShortName": "en-US-AriaNeural"},
                 {"ShortName": "en-US-GuyNeural"},
-            ])
+            ],
+        ) as mock_list_voices:
 
             provider = EdgeTTSProvider()
             voices = await provider.list_voices()
 
             assert "en-US-AriaNeural" in voices
             assert "en-US-GuyNeural" in voices
+            mock_list_voices.assert_awaited_once()
 
 
 class TestOpenAITTSProvider:

@@ -41,6 +41,11 @@ def create_llm_provider(config: LLMConfig) -> LLMProvider:
             base_url=config.base_url,
         )
 
+    elif config.provider == LLMProviderType.SIMPLE:
+        from codevid.llm.provider_simple import SimpleLLM
+
+        return SimpleLLM()
+
     else:
         raise LLMError(
             f"Unknown LLM provider: {config.provider}",

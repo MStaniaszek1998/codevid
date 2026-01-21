@@ -1,0 +1,34 @@
+# Scratchpad config for local `codevid generate` runs.
+
+project:
+  name: "Coin flipper at random.org"
+  output_dir: ".scratchpad"
+
+llm:
+  provider: ollama
+  model: huggingface.co/speakleash/Bielik-11B-v2.6-Instruct-GGUF:latest
+
+tts:
+  provider: local_kokoro
+  voice: af_heart
+  speed: 1.0
+
+recording:
+  fps: 30
+  resolution: [960, 540]
+  highlight_clicks: true
+  mouse_spotlight: true
+  show_cursor: true
+
+video:
+  theme: default
+  include_captions: true
+  encoding:
+    crf: 18
+    preset: medium
+    pixel_format: yuv420p
+    faststart: true
+
+tests:
+  framework: playwright
+  browser: chromium

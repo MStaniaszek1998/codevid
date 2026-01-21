@@ -19,6 +19,7 @@ class LLMProviderType(Enum):
     OPENAI = "openai"
     ANTHROPIC = "anthropic"
     OLLAMA = "ollama"
+    SIMPLE = "simple"
 
 
 class TTSProviderType(Enum):
@@ -27,6 +28,7 @@ class TTSProviderType(Enum):
     EDGE = "edge"
     OPENAI = "openai"
     ELEVENLABS = "elevenlabs"
+    KOKORO = "local_kokoro"
     NONE = "none"
 
 

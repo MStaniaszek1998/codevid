@@ -29,11 +29,13 @@ class LLMChoice(str, Enum):
     openai = "openai"
     anthropic = "anthropic"
     ollama = "ollama"
+    simple = "simple"
 
 
 class TTSChoice(str, Enum):
     edge = "edge"
     openai = "openai"
+    kokoro = "local_kokoro"
     elevenlabs = "elevenlabs"
     none = "none"
 
@@ -325,6 +327,22 @@ def list_voices(
             ("onyx", "Deep, authoritative"),
             ("nova", "Female, friendly"),
             ("shimmer", "Female, expressive"),
+        ]
+        for voice_id, description in voices:
+            console.print(f"  [cyan]{voice_id}[/cyan] - {description}")
+
+    elif provider == TTSChoice.kokoro:
+        voices = [
+            ("af_bella", "American Female (Bella)"),
+            ("af_nicole", "American Female (Nicole)"),
+            ("af_sarah", "American Female (Sarah)"),
+            ("af_sky", "American Female (Sky)"),
+            ("am_adam", "American Male (Adam)"),
+            ("am_michael", "American Male (Michael)"),
+            ("bf_emma", "British Female (Emma)"),
+            ("bf_isabella", "British Female (Isabella)"),
+            ("bm_george", "British Male (George)"),
+            ("bm_lewis", "British Male (Lewis)"),
         ]
         for voice_id, description in voices:
             console.print(f"  [cyan]{voice_id}[/cyan] - {description}")
