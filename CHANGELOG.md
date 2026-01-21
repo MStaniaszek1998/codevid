@@ -2,6 +2,19 @@
 
 <!-- version list -->
 
+## v1.4.1 (2026-01-21)
+
+### Bug Fixes
+
+- Avoid title-card text clipping
+  ([`849d983`](https://github.com/MStaniaszek1998/codevid/commit/849d98389075f18f2c7ce7784775491e47a9d9f1))
+
+### Documentation
+
+- Add uv setup instructions
+  ([`9a1bd65`](https://github.com/MStaniaszek1998/codevid/commit/9a1bd655ee73ddddd2f32eb46c683654cb44ad2a))
+
+
 ## v1.4.0 (2026-01-06)
 
 ### Features
