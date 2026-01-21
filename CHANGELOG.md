@@ -2,6 +2,37 @@
 
 <!-- version list -->
 
+## v1.5.0 (2026-01-21)
+
+### Bug Fixes
+
+- Avoid title-card text clipping
+  ([`849d983`](https://github.com/MStaniaszek1998/codevid/commit/849d98389075f18f2c7ce7784775491e47a9d9f1))
+
+- Use ffmpeg for screen recording
+  ([`725abda`](https://github.com/MStaniaszek1998/codevid/commit/725abda345236ad05838b190988061cc767343fd))
+
+### Chores
+
+- Add pytest-playwright to dev deps
+  ([`b2f5f78`](https://github.com/MStaniaszek1998/codevid/commit/b2f5f784c429922cbed438dc84b6761e79274b03))
+
+### Documentation
+
+- Add uv setup instructions
+  ([`9a1bd65`](https://github.com/MStaniaszek1998/codevid/commit/9a1bd655ee73ddddd2f32eb46c683654cb44ad2a))
+
+### Features
+
+- Support Playwright locator chains in parser/executor
+  ([`419fd7e`](https://github.com/MStaniaszek1998/codevid/commit/419fd7ec8eefd45aa6823d570636f3195167c953))
+
+### Refactoring
+
+- Rename LLM provider files with provider_ prefix
+  ([`ac8ec38`](https://github.com/MStaniaszek1998/codevid/commit/ac8ec3874a2ed8bdbf6a9c010e78ca13eb384b14))
+
+
 ## v1.4.0 (2026-01-06)
 
 ### Features
